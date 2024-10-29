@@ -1,10 +1,11 @@
 import os
+import sys
 
 import pandas as pd
 from docx import Document
 from docx2pdf import convert
 
-# uv run --with pyinstaller -- pyinstaller main.py
+# uv run --with pyinstaller -- pyinstaller --onefile main.py
 
 
 def fill_conract(template_path, output_path, data):
@@ -19,22 +20,26 @@ def fill_conract(template_path, output_path, data):
 
 
 def generate_contract_from_log():
-    BASE_LOC = os.path.dirname(os.path.dirname(__file__))
+    arg1 = None if len(sys.argv) == 1 else sys.argv[1]
+    BASE_LOC = arg1 if arg1 else os.path.dirname(os.getcwd())
     log_loc = os.path.join(BASE_LOC, "subcontractors log.xlsm")
     log = pd.ExcelFile(log_loc)
 
-    sheet_names = "\n".join([f"{i+1}. {x}" for i, x in enumerate(log.sheet_names)])
-    sheet_no = int(input("Select sheet:\n" + sheet_names + "\n")) - 1
+    sheet_names = log.sheet_names
+    sheet_name_list = "\n".join([f"{i+1}. {x}" for i, x in enumerate(sheet_names)])
+
+    sheet_no = int(input("Select sheet:\n" + sheet_name_list + "\n")) - 1
     df = pd.read_excel(log_loc, sheet_name=sheet_no)
-    contract_no = int(input("Enter contract number: "))
-    row = dict(df.iloc[contract_no - 1])
-    
+    contract_no = int(input("Enter contract number: ")) - 1
+    row = dict(df.iloc[contract_no])
+    sheet_name = sheet_names[sheet_no]
     fill_conract(
-        "temp.docx",
-        os.path.join(BASE_LOC, str(contract_no), "contract", "main.docx"),
+        os.path.join(BASE_LOC, 'templates', f"{sheet_name}.docx"),
+        os.path.join(BASE_LOC, str(contract_no + 1), "contract", "main.docx"),
         row,
     )
 
 
 if __name__ == "__main__":
     generate_contract_from_log()
+
